@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 require "aws-graph/version"
 require "thor"
-require 'aws-sdk'
+require 'yaml'
+require 'aws-sdk-v1'
 require 'gviz'
 
 module AwsGraph
@@ -38,7 +39,7 @@ module AwsGraph
       security_groups.each do | sg |
         cluster_id = 'cluster' + sg.id.gsub(/[-\/]/,'')
         sg_hash[sg.id] = cluster_id
-        
+
         if sg.vpc_id
           print "v"
           label = sg.name + '[' + sg.id + ']' + '[vpc]'
@@ -46,7 +47,7 @@ module AwsGraph
           print "."
           label = sg.name + '[' + sg.id + ']'
         end
-      
+
         @formated[:security_groups][sg.id.to_sym] = {
           label: label,
           vpc_id: sg.vpc_id,
@@ -84,7 +85,7 @@ module AwsGraph
           @formated[:security_groups][sg.id.to_sym][:instances][e.id.to_sym] = {
               label: label,
               type: :ec2,
-              status: e.status,              
+              status: e.status,
           }
         end
       end
@@ -101,7 +102,7 @@ module AwsGraph
             @formated[:security_groups][sg.id.to_sym][:instances][e.id.to_sym] = {
               label: label,
               type: :ec2,
-              status: e.status,              
+              status: e.status,
             }
           end
         end
@@ -226,18 +227,18 @@ module AwsGraph
 
     protected
     def load(yml)
-      @config = YAML.load_file(yml)
-      @ec2 = AWS::EC2.new(
+      @config = ::YAML.load_file(yml)
+      @ec2 = ::AWS::EC2.new(
                           :access_key_id => @config['aws_access_key_id'],
                           :secret_access_key => @config['aws_secret_access_key'],
                           :region => @config['aws_region'],
                           )
-      @rds = AWS::RDS.new(
+      @rds = ::AWS::RDS.new(
                           :access_key_id => @config['aws_access_key_id'],
                           :secret_access_key => @config['aws_secret_access_key'],
                           :region => @config['aws_region'],
                           )
-      @elb = AWS::ELB.new(
+      @elb = ::AWS::ELB.new(
                           :access_key_id => @config['aws_access_key_id'],
                           :secret_access_key => @config['aws_secret_access_key'],
                           :region => @config['aws_region'],
@@ -249,7 +250,7 @@ module AwsGraph
       secret = options[:secret]
       f = @formated
 
-      gv = Gviz.new(:AWS, :digraph)
+      gv = ::Gviz.new(:AWS, :digraph)
       gv.graph do
         global layout:'fdp', overlap:false, compound:true, rankdir:'LR'
         edges lhead: '', ltail: ''
@@ -284,7 +285,7 @@ module AwsGraph
               end
               node (sg_id.to_s + i_id.to_s).gsub(/[-\/]/, '').to_sym, label: i[:label], shape: :none, image: image_path
             end
-            
+
             sg[:inbounds].each do | ip, inbounds |
 
               # Security Group -> Security Group
