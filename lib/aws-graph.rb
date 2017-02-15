@@ -227,22 +227,29 @@ module AwsGraph
 
     protected
     def load(yml)
-      @config = ::YAML.load_file(yml)
-      @ec2 = ::AWS::EC2.new(
-                          :access_key_id => @config['aws_access_key_id'],
-                          :secret_access_key => @config['aws_secret_access_key'],
-                          :region => @config['aws_region'],
-                          )
-      @rds = ::AWS::RDS.new(
-                          :access_key_id => @config['aws_access_key_id'],
-                          :secret_access_key => @config['aws_secret_access_key'],
-                          :region => @config['aws_region'],
-                          )
-      @elb = ::AWS::ELB.new(
-                          :access_key_id => @config['aws_access_key_id'],
-                          :secret_access_key => @config['aws_secret_access_key'],
-                          :region => @config['aws_region'],
-                          )
+      begin
+        @config = ::YAML.load_file(yml)
+        @ec2 = ::AWS::EC2.new(
+                            :access_key_id => @config['aws_access_key_id'],
+                            :secret_access_key => @config['aws_secret_access_key'],
+                            :region => @config['aws_region'],
+                            )
+        @rds = ::AWS::RDS.new(
+                            :access_key_id => @config['aws_access_key_id'],
+                            :secret_access_key => @config['aws_secret_access_key'],
+                            :region => @config['aws_region'],
+                            )
+        @elb = ::AWS::ELB.new(
+                            :access_key_id => @config['aws_access_key_id'],
+                            :secret_access_key => @config['aws_secret_access_key'],
+                            :region => @config['aws_region'],
+                            )
+      rescue Errno::ENOENT
+        provider = AWS::Core::CredentialProviders::ENVProvider.new("AWS")
+        @ec2 = ::AWS::EC2.new(credential_provider: provider)
+        @rds = ::AWS::RDS.new(credential_provider: provider)
+        @elb = ::AWS::ELB.new(credential_provider: provider)
+      end
     end
 
     protected
